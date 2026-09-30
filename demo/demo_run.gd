@@ -25,56 +25,120 @@ func _ready() -> void:
 
 
 func _build_world() -> void:
-	var world := WorldEnvironment.new()
-	var environment := Environment.new()
+	# =========================================================
+	# ROOM 1 - JUNGLE RUINS
+	# =========================================================
 
-	environment.background_mode = Environment.BG_COLOR
-	environment.background_color = Color(0.025, 0.08, 0.035)
-	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color(0.35, 0.45, 0.30)
-	environment.ambient_light_energy = 0.9
-
-	world.environment = environment
-	add_child(world)
-
-	# Arena floor
+	# ---------------- FLOOR ----------------
 	var floor := StaticBody3D.new()
+	floor.name = "JungleFloor"
 	add_child(floor)
 
 	var floor_collision := CollisionShape3D.new()
 	var floor_shape := BoxShape3D.new()
-	floor_shape.size = Vector3(24, 0.5, 20)
+
+	floor_shape.size = Vector3(30, 0.5, 26)
 	floor_collision.shape = floor_shape
 	floor_collision.position.y = -0.25
 	floor.add_child(floor_collision)
 
 	var floor_mesh := MeshInstance3D.new()
 	var mesh := BoxMesh.new()
-	mesh.size = Vector3(24, 0.5, 20)
+
+	mesh.size = Vector3(30, 0.5, 26)
 	floor_mesh.mesh = mesh
 	floor_mesh.position.y = -0.25
 
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.10, 0.20, 0.08)
-	floor_mesh.material_override = material
+	var ground_material := StandardMaterial3D.new()
+	ground_material.albedo_color = Color(0.07, 0.16, 0.06)
+
+	floor_mesh.material_override = ground_material
 	floor.add_child(floor_mesh)
 
-	# Simple jungle trees
-	for x in [-9.0, -6.0, 6.0, 9.0]:
-		_create_tree(Vector3(x, 0, -6))
-		_create_tree(Vector3(x, 0, 6))
 
+	# ---------------- CENTRAL PATH ----------------
+	var path := MeshInstance3D.new()
+	var path_mesh := BoxMesh.new()
+
+	path_mesh.size = Vector3(6, 0.04, 24)
+	path.mesh = path_mesh
+	path.position = Vector3(0, 0.03, 0)
+
+	var path_material := StandardMaterial3D.new()
+	path_material.albedo_color = Color(0.20, 0.17, 0.10)
+
+	path.material_override = path_material
+	add_child(path)
+
+
+	# ---------------- JUNGLE TREES ----------------
+	var tree_positions: Array[Vector3] = [
+		Vector3(-12, 0, -10),
+		Vector3(-9, 0, -8),
+		Vector3(-12, 0, -4),
+		Vector3(-10, 0, 1),
+		Vector3(-12, 0, 7),
+		Vector3(-9, 0, 10),
+
+		Vector3(12, 0, -10),
+		Vector3(9, 0, -8),
+		Vector3(12, 0, -4),
+		Vector3(10, 0, 1),
+		Vector3(12, 0, 7),
+		Vector3(9, 0, 10)
+	]
+
+	for tree_position in tree_positions:
+		_create_tree(tree_position)
+
+
+	# ---------------- RUIN PILLARS ----------------
+	_create_ruin_pillar(Vector3(-5, 0, -5))
+	_create_ruin_pillar(Vector3(5, 0, -5))
+
+	_create_ruin_pillar(Vector3(-5, 0, 5))
+	_create_ruin_pillar(Vector3(5, 0, 5))
+
+
+	# ---------------- BROKEN STONES ----------------
+	_create_ruin_stone(
+		Vector3(-6.5, 0.35, 1),
+		Vector3(2.5, 0.7, 1.3),
+		12.0
+	)
+
+	_create_ruin_stone(
+		Vector3(7, 0.25, -2),
+		Vector3(1.8, 0.5, 1.5),
+		-18.0
+	)
+
+	_create_ruin_stone(
+		Vector3(-7, 0.2, 8),
+		Vector3(1.5, 0.4, 2.0),
+		25.0
+	)
+
+
+	# ---------------- LIGHTING ----------------
 	var light := DirectionalLight3D.new()
+
 	light.rotation_degrees = Vector3(-55, -30, 0)
-	light.light_energy = 1.4
+	light.light_energy = 1.05
 	light.shadow_enabled = true
+
+	light.light_color = Color(0.85, 0.92, 0.78)
+
 	add_child(light)
 
-	var camera := Camera3D.new()
-	camera.position = Vector3(0, 9, 14)
-	camera.rotation_degrees = Vector3(-32, 0, 0)
-	add_child(camera)
 
+	# ---------------- CAMERA ----------------
+	var camera := Camera3D.new()
+
+	camera.position = Vector3(0, 11, 16)
+	camera.rotation_degrees = Vector3(-36, 0, 0)
+
+	add_child(camera)
 
 func _create_tree(pos: Vector3) -> void:
 	var trunk := MeshInstance3D.new()
@@ -105,6 +169,44 @@ func _create_tree(pos: Vector3) -> void:
 	leaf_material.albedo_color = Color(0.06, 0.30, 0.08)
 	leaves.material_override = leaf_material
 	add_child(leaves)
+func _create_ruin_pillar(pos: Vector3) -> void:
+	var pillar := MeshInstance3D.new()
+	var pillar_mesh := BoxMesh.new()
+
+	pillar_mesh.size = Vector3(1.2, 3.5, 1.2)
+
+	pillar.mesh = pillar_mesh
+	pillar.position = pos + Vector3(0, 1.75, 0)
+
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.22, 0.24, 0.18)
+
+	pillar.material_override = material
+
+	add_child(pillar)
+
+
+func _create_ruin_stone(
+	pos: Vector3,
+	size: Vector3,
+	rotation_y: float
+) -> void:
+
+	var stone := MeshInstance3D.new()
+	var stone_mesh := BoxMesh.new()
+
+	stone_mesh.size = size
+
+	stone.mesh = stone_mesh
+	stone.position = pos
+	stone.rotation_degrees.y = rotation_y
+
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.17, 0.19, 0.14)
+
+	stone.material_override = material
+
+	add_child(stone)
 
 
 func _spawn_player() -> void:
