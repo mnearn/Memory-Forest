@@ -174,7 +174,7 @@ func purchase_upgrade(upgrade_name: String) -> bool:
 
 		_:
 			return false
-
+save_inheritance()
 	return true
 
 
