@@ -86,6 +86,7 @@ func player_died() -> int:
 	generation += 1
 
 	reset_run()
+save_inheritance()
 
 	return memory_gained
 
