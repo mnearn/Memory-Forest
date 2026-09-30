@@ -1,5 +1,10 @@
 ; Engine configuration file.
-; Memory Forest inheritance prototype.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
@@ -7,6 +12,11 @@ config_version=5
 
 config/name="Memory Forest"
 run/main_scene="res://inheritance_system/upgrade_shrine.tscn"
+config/features=PackedStringArray("4.7")
+
+[autoload]
+
+InheritanceManager="*res://inheritance_system/inheritance_manager.gd"
 
 [display]
 
@@ -15,10 +25,6 @@ window/size/viewport_height=720
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
-
-[autoload]
-
-InheritanceManager="*res://inheritance_system/inheritance_manager.gd"
 
 [rendering]
 

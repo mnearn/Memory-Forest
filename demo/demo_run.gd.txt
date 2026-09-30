@@ -127,8 +127,7 @@ func start_room(room_number: int) -> void:
 
 
 func _spawn_room_enemies() -> void:
-	var amount: int = min(current_room + 1, 5)
-
+	var amount := min(current_room + 1, 5)
 	enemies_remaining = amount
 
 	for i in range(amount):
