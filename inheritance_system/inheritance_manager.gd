@@ -1,5 +1,5 @@
 extends Node
-
+const SAVE_PATH := "user://inheritance_save.json"
 # ============================================================
 # MEMORY FOREST - INHERITANCE MANAGER
 # ============================================================
@@ -196,3 +196,74 @@ func get_movement_speed_multiplier() -> float:
 func get_bonus_health() -> int:
 	# +10 maximum health per level
 	return health_level * 10
+
+
+# ============================================================
+# SAVE / LOAD
+# ============================================================
+
+func save_inheritance() -> void:
+	var save_data := {
+		"current_memory": current_memory,
+		"total_memory_earned": total_memory_earned,
+		"generation": generation,
+
+		"attack_level": attack_level,
+		"attack_speed_level": attack_speed_level,
+		"movement_speed_level": movement_speed_level,
+		"health_level": health_level
+	}
+
+	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+
+	if file == null:
+		push_warning("Could not save inheritance data.")
+		return
+
+	file.store_string(JSON.stringify(save_data))
+
+
+func load_inheritance() -> void:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return
+
+	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+
+	if file == null:
+		push_warning("Could not load inheritance data.")
+		return
+
+	var json := JSON.new()
+	var error := json.parse(file.get_as_text())
+
+	if error != OK:
+		push_warning("Inheritance save file could not be read.")
+		return
+
+	var data = json.data
+
+	if typeof(data) != TYPE_DICTIONARY:
+		return
+
+	current_memory = int(data.get("current_memory", 0))
+	total_memory_earned = int(data.get("total_memory_earned", 0))
+	generation = int(data.get("generation", 1))
+
+	attack_level = int(data.get("attack_level", 0))
+	attack_speed_level = int(data.get("attack_speed_level", 0))
+	movement_speed_level = int(data.get("movement_speed_level", 0))
+	health_level = int(data.get("health_level", 0))
+
+
+func reset_inheritance_save() -> void:
+	current_memory = 0
+	total_memory_earned = 0
+	generation = 1
+
+	attack_level = 0
+	attack_speed_level = 0
+	movement_speed_level = 0
+	health_level = 0
+
+	reset_run()
+	save_inheritance()
