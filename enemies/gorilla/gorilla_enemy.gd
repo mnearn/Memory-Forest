@@ -31,6 +31,7 @@ var can_attack: bool = true
 var can_slam: bool = true
 var is_attacking: bool = false
 var is_dead: bool = false
+var slam_warning: MeshInstance3D
 
 
 func _ready() -> void:
@@ -193,6 +194,7 @@ func _ground_slam() -> void:
 	is_attacking = true
 	can_slam = false
 	can_attack = false
+	_show_slam_warning()
 
 	# ---------------- WARNING ----------------
 	# Gorilla rises up before attacking.
@@ -242,6 +244,9 @@ func _ground_slam() -> void:
 		# Damage happens when the Gorilla hits the ground.
 	if is_dead or not is_inside_tree():
 		return
+		
+	_remove_slam_warning()
+	_create_slam_shockwave()
 
 	if is_instance_valid(player) and player.is_inside_tree():
 		var distance: float = global_position.distance_to(
@@ -290,7 +295,93 @@ func _ground_slam() -> void:
 # ============================================================
 # DAMAGE
 # ============================================================
+func _show_slam_warning() -> void:
+	if is_dead or not is_inside_tree():
+		return
 
+	slam_warning = MeshInstance3D.new()
+
+	var warning_mesh := CylinderMesh.new()
+	warning_mesh.top_radius = slam_range
+	warning_mesh.bottom_radius = slam_range
+	warning_mesh.height = 0.03
+
+	slam_warning.mesh = warning_mesh
+	slam_warning.position = Vector3(0, 0.04, 0)
+
+	var warning_material := StandardMaterial3D.new()
+	warning_material.albedo_color = Color(0.85, 0.12, 0.04, 0.30)
+	warning_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	warning_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+
+	slam_warning.material_override = warning_material
+	add_child(slam_warning)
+
+	slam_warning.scale = Vector3(0.15, 1.0, 0.15)
+
+	var tween := create_tween()
+	tween.tween_property(
+		slam_warning,
+		"scale",
+		Vector3(1.0, 1.0, 1.0),
+		0.55
+	)
+
+
+func _remove_slam_warning() -> void:
+	if is_instance_valid(slam_warning):
+		slam_warning.queue_free()
+
+	slam_warning = null
+
+
+func _create_slam_shockwave() -> void:
+	if is_dead or not is_inside_tree():
+		return
+
+	var shockwave := MeshInstance3D.new()
+
+	var shockwave_mesh := CylinderMesh.new()
+	shockwave_mesh.top_radius = 1.0
+	shockwave_mesh.bottom_radius = 1.0
+	shockwave_mesh.height = 0.05
+
+	shockwave.mesh = shockwave_mesh
+	shockwave.position = Vector3(0, 0.06, 0)
+
+	var shockwave_material := StandardMaterial3D.new()
+	shockwave_material.albedo_color = Color(1.0, 0.45, 0.08, 0.65)
+	shockwave_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	shockwave_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	shockwave_material.emission_enabled = true
+	shockwave_material.emission = Color(1.0, 0.25, 0.03)
+	shockwave_material.emission_energy_multiplier = 2.0
+
+	shockwave.material_override = shockwave_material
+	add_child(shockwave)
+
+	shockwave.scale = Vector3(0.15, 1.0, 0.15)
+
+	var tween := create_tween()
+
+	tween.tween_property(
+		shockwave,
+		"scale",
+		Vector3(slam_range, 1.0, slam_range),
+		0.30
+	)
+
+	tween.parallel().tween_property(
+		shockwave_material,
+		"albedo_color:a",
+		0.0,
+		0.30
+	)
+
+	await tween.finished
+
+	if is_instance_valid(shockwave):
+		shockwave.queue_free()
 func take_damage(amount: float) -> void:
 	if is_dead:
 		return
