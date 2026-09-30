@@ -86,7 +86,7 @@ func player_died() -> int:
 	generation += 1
 
 	reset_run()
-save_inheritance()
+	save_inheritance()
 
 	return memory_gained
 
@@ -174,7 +174,7 @@ func purchase_upgrade(upgrade_name: String) -> bool:
 
 		_:
 			return false
-save_inheritance()
+	save_inheritance()
 	return true
 
 
