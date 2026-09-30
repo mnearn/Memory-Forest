@@ -59,7 +59,8 @@ var health_level: int = 0
 # Level 1 -> 2 costs 20
 # etc.
 const BASE_UPGRADE_COST: int = 10
-
+func _ready() -> void:
+	load_inheritance()
 
 # ---------------- ROOM TRACKING ----------------
 
