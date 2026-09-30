@@ -239,10 +239,9 @@ func _demo_room_three_death() -> void:
 
 
 func _start_demo_run() -> void:
-	message_label.text = (
-		"Descendant %d enters the forest.\n"
-		+ "Playable rooms are the next build step."
-	) % InheritanceManager.get_generation()
+	get_tree().change_scene_to_file(
+		"res://demo/demo_run.tscn"
+	)
 
 
 func _refresh_ui() -> void:
