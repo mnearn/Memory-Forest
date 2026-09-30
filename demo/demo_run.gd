@@ -2,6 +2,7 @@ extends Node3D
 
 const PlayerScript = preload("res://demo/demo_player.gd")
 const EnemyScript = preload("res://demo/demo_enemy.gd")
+const GorillaScript = preload("res://enemies/gorilla/gorilla_enemy.gd")
 
 var player: CharacterBody3D
 
@@ -70,8 +71,8 @@ func _build_world() -> void:
 	add_child(light)
 
 	var camera := Camera3D.new()
-	camera.position = Vector3(0, 14, 13)
-	camera.rotation_degrees = Vector3(-47, 0, 0)
+	camera.position = Vector3(0, 9, 14)
+	camera.rotation_degrees = Vector3(-32, 0, 0)
 	add_child(camera)
 
 
@@ -127,8 +128,23 @@ func start_room(room_number: int) -> void:
 
 
 func _spawn_room_enemies() -> void:
-	var amount: int = min(current_room + 1, 5)
+	# Room 1 is our Gorilla test room.
+	if current_room == 1:
+		enemies_remaining = 1
 
+		var gorilla := CharacterBody3D.new()
+		gorilla.set_script(GorillaScript)
+		gorilla.position = Vector3(0, 0.1, -3)
+
+		add_child(gorilla)
+
+		gorilla.set_player(player)
+		gorilla.defeated.connect(_on_enemy_defeated)
+
+		return
+
+	# Other rooms still use the original demo enemies.
+	var amount: int = min(current_room + 1, 5)
 	enemies_remaining = amount
 
 	for i in range(amount):
@@ -146,8 +162,6 @@ func _spawn_room_enemies() -> void:
 		add_child(enemy)
 		enemy.set_player(player)
 		enemy.defeated.connect(_on_enemy_defeated)
-
-
 func _on_enemy_defeated() -> void:
 	enemies_remaining -= 1
 

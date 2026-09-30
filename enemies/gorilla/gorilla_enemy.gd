@@ -1,0 +1,396 @@
+extends CharacterBody3D
+
+signal defeated
+
+const GORILLA_MODEL = preload(
+	"res://assets/enemies/gorilla/gorilla.glb"
+)
+
+var player: CharacterBody3D
+var model: Node3D
+
+# ============================================================
+# GORILLA STATS
+# ============================================================
+
+var max_health: float = 120.0
+var health: float = 120.0
+
+var move_speed: float = 2.0
+
+var melee_damage: float = 15.0
+var slam_damage: float = 25.0
+
+var melee_range: float = 2.4
+var slam_range: float = 3.5
+
+var attack_cooldown: float = 1.5
+var slam_cooldown: float = 5.0
+
+var can_attack: bool = true
+var can_slam: bool = true
+var is_attacking: bool = false
+var is_dead: bool = false
+
+
+func _ready() -> void:
+	add_to_group("enemies")
+	_build_gorilla()
+
+
+func set_player(target: CharacterBody3D) -> void:
+	player = target
+
+
+# ============================================================
+# MOVEMENT / AI
+# ============================================================
+
+func _physics_process(delta: float) -> void:
+	if is_dead:
+		return
+
+	if not is_instance_valid(player):
+		return
+
+	if is_attacking:
+		velocity.x = 0.0
+		velocity.z = 0.0
+		_apply_gravity(delta)
+		move_and_slide()
+		return
+
+	var offset := player.global_position - global_position
+	var distance := offset.length()
+
+	_face_player()
+
+	# Chase but stop before overlapping the player.
+	if distance > melee_range:
+		var direction := offset.normalized()
+
+		velocity.x = direction.x * move_speed
+		velocity.z = direction.z * move_speed
+
+		_fake_walk_motion()
+
+	else:
+		velocity.x = 0.0
+		velocity.z = 0.0
+
+		# Slam has priority when available.
+		if can_slam and distance <= slam_range:
+			_ground_slam()
+
+		elif can_attack:
+			_melee_attack()
+
+	_apply_gravity(delta)
+	move_and_slide()
+
+
+func _apply_gravity(delta: float) -> void:
+	if not is_on_floor():
+		velocity.y -= 20.0 * delta
+	else:
+		velocity.y = 0.0
+
+
+func _face_player() -> void:
+	var target_position := player.global_position
+	target_position.y = global_position.y
+
+	if global_position.distance_to(target_position) > 0.1:
+		look_at(target_position, Vector3.UP)
+
+
+func _fake_walk_motion() -> void:
+	if model == null:
+		return
+
+	var time := Time.get_ticks_msec() * 0.008
+
+	model.position.y = 1.0 + sin(time) * 0.04
+
+	model.rotation_degrees.z = sin(time * 0.5) * 2.0
+
+
+# ============================================================
+# BASIC ATTACK
+# ============================================================
+
+func _melee_attack() -> void:
+	if is_attacking:
+		return
+
+	is_attacking = true
+	can_attack = false
+
+	if model != null:
+		var tween := create_tween()
+
+		# Pull back.
+		tween.tween_property(
+			model,
+			"position:z",
+			0.20,
+			0.12
+		)
+
+		# Lunge forward.
+		tween.tween_property(
+			model,
+			"position:z",
+			0.6,
+			0.10
+		)
+
+		# Return.
+		tween.tween_property(
+			model,
+			"position:z",
+			0.0,
+			0.15
+		)
+
+	await get_tree().create_timer(0.22).timeout
+
+	# The Gorilla could die during the attack wind-up.
+	if is_dead or not is_inside_tree():
+		return
+
+	if is_instance_valid(player) and player.is_inside_tree():
+		var distance: float = global_position.distance_to(
+			player.global_position
+		)
+
+		if distance <= melee_range + 0.4:
+			player.take_damage(melee_damage)
+
+	await get_tree().create_timer(0.25).timeout
+
+	if is_dead or not is_inside_tree():
+		return
+
+	is_attacking = false
+
+	await get_tree().create_timer(
+		attack_cooldown
+	).timeout
+
+	if is_dead or not is_inside_tree():
+		return
+
+	can_attack = true
+# ============================================================
+# GROUND SLAM
+# ============================================================
+
+func _ground_slam() -> void:
+	if is_attacking:
+		return
+
+	is_attacking = true
+	can_slam = false
+	can_attack = false
+
+	# ---------------- WARNING ----------------
+	# Gorilla rises up before attacking.
+	# This gives the player time to escape.
+
+	if model != null:
+		var windup := create_tween()
+
+		windup.tween_property(
+			model,
+			"position:y",
+			0.55,
+			0.45
+		)
+
+		windup.parallel().tween_property(
+			model,
+			"scale",
+			Vector3(3.15, 3.15, 3.15),
+			0.45
+		)
+
+	await get_tree().create_timer(0.55).timeout
+
+	# ---------------- SLAM ----------------
+
+	if model != null:
+		var slam := create_tween()
+
+		slam.tween_property(
+			model,
+			"position:y",
+			-0.15,
+			0.10
+		)
+
+		slam.parallel().tween_property(
+			model,
+			"scale",
+			Vector3(3.0, 2.8, 3.0),
+			0.10
+		)
+
+	await get_tree().create_timer(0.10).timeout
+
+	# Damage happens when the Gorilla hits the ground.
+		# Damage happens when the Gorilla hits the ground.
+	if is_dead or not is_inside_tree():
+		return
+
+	if is_instance_valid(player) and player.is_inside_tree():
+		var distance: float = global_position.distance_to(
+			player.global_position
+		)
+
+		if distance <= slam_range:
+			player.take_damage(slam_damage)
+	# Return to normal.
+	if model != null:
+		var recover := create_tween()
+
+		recover.tween_property(
+			model,
+			"position:y",
+			1.0,
+			0.20
+		)
+
+		recover.parallel().tween_property(
+			model,
+			"scale",
+			Vector3(3.0, 3.0, 3.0),
+			0.20
+		)
+
+	await get_tree().create_timer(0.35).timeout
+
+	is_attacking = false
+
+	await get_tree().create_timer(
+		attack_cooldown
+	).timeout
+
+	if not is_dead:
+		can_attack = true
+
+	await get_tree().create_timer(
+		slam_cooldown - attack_cooldown
+	).timeout
+
+	if not is_dead:
+		can_slam = true
+
+
+# ============================================================
+# DAMAGE
+# ============================================================
+
+func take_damage(amount: float) -> void:
+	if is_dead:
+		return
+
+	health -= amount
+
+	_fake_hit_reaction()
+
+	if health <= 0.0:
+		_die()
+
+
+func _fake_hit_reaction() -> void:
+	if model == null:
+		return
+
+	var tween := create_tween()
+
+	tween.tween_property(
+		model,
+		"scale",
+		Vector3(3.15, 2.85, 3.15),
+		0.06
+	)
+
+	tween.tween_property(
+		model,
+		"scale",
+		Vector3(3.0, 3.0, 3.0),
+		0.10
+	)
+
+
+# ============================================================
+# DEATH
+# ============================================================
+
+func _die() -> void:
+	if is_dead:
+		return
+
+	is_dead = true
+	is_attacking = true
+
+	remove_from_group("enemies")
+
+	velocity = Vector3.ZERO
+
+	if model != null:
+		var tween := create_tween()
+
+		tween.tween_property(
+			model,
+			"rotation_degrees:x",
+			90.0,
+			0.65
+		)
+
+		tween.parallel().tween_property(
+			model,
+			"position:y",
+			0.6,
+			0.65
+		)
+
+		await tween.finished
+
+	defeated.emit()
+	queue_free()
+
+
+# ============================================================
+# MODEL / COLLISION
+# ============================================================
+
+func _build_gorilla() -> void:
+	var collision := CollisionShape3D.new()
+	var shape := CapsuleShape3D.new()
+
+	shape.radius = 1.2
+	shape.height = 3.2
+
+	collision.shape = shape
+	collision.position.y = 1.6
+
+	add_child(collision)
+
+	model = GORILLA_MODEL.instantiate()
+	add_child(model)
+
+	model.position = Vector3(0, 1.0, 0)
+
+	model.scale = Vector3(
+		3.0,
+		3.0,
+		3.0
+	)
+
+	model.rotation_degrees = Vector3(
+		0,
+		180,
+		0
+	)
