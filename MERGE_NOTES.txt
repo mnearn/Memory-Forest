@@ -1,0 +1,25 @@
+MEMORY FOREST - CONSOLIDATED BUILD (2026-10-02)
+
+Merged into the older working combat build:
+- Godot MCP addon from newest project
+- Gorilla model + working Gorilla AI/health bar/slam
+- Lion GLB + Room 5 Lion boss implementation
+- Complete recovered SFX pack under audio/
+- Sacrifice Descendant confirmation flow (Q or HUD button)
+- Separate normal-death messaging
+- Styled gameplay HUD: Generation, Health bar, Memory, Room 1-5 progress
+- Styled Memory Shrine UI
+- Upgrade cards show BEFORE -> AFTER, exact increase, and Memory cost
+- Upgrade values: Attack +5%, Attack Speed +5%, Movement +4%, Max Health +10
+- Memory rewards: 0 / 10 / 25 / 50 / 100
+- Visible player attack swing
+- Out-of-bounds death
+
+IMPORTANT:
+- Q is used for Sacrifice because S is already Move Backward.
+- The recovered older ZIP definitively contained the Gorilla model, but not the Player/Jaguar/Anaconda/Shrine GLBs.
+  Those models were NOT guessed or mislabeled in this build.
+- Rooms 2-4 still use placeholder enemies until the correct models are verified.
+- Lion model is unrigged, so current boss movement/attack is code-driven rather than skeletal animation.
+- Audio assets are included but not all triggers are wired yet.
+- Open project.godot in Godot 4.7.x and allow imports to complete before testing.

@@ -1,0 +1,16 @@
+# Godot generated files
+.godot/
+
+# Godot generated UID files
+*.gd.uid
+
+# Imported resource metadata
+*.import
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/

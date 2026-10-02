@@ -1,0 +1,7 @@
+MEMORY SHRINE VISUAL UPDATE
+- Added official user-supplied shrine model: assets/shrine/memory_shrine.glb
+- Replaced placeholder cylinder shrine with the real GLB.
+- Preserved all inheritance logic and before -> after upgrade values.
+- Redesigned UI into left inheritance cards + right inherited-strength summary so the 3D shrine remains visible.
+- Added dark forest lighting and teal Memory glow.
+- Begin Generation remains functional.

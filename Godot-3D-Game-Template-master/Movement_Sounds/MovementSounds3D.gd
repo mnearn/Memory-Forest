@@ -1,0 +1,201 @@
+#Make sure this node is positioned slightly above the ground, if it clips it won't play.
+#If you are USING GRIDMAPS, material metadata must be placed into the materials themselves, as meshlibrary/gridmap does not preserve node data
+
+@icon("uid://bnata7fjyrdg7")
+class_name MovementSounds3D
+
+extends AudioStreamPlayer3D
+
+signal play_sound
+
+@export var raycast_length : float = 10
+@export var time_interval : float = .45
+## Determines if sounds are played on a timer (Mainly to simulate the pace of a character walking)
+@export var timed_sounds : bool = true
+@export var sound_set : MaterialList
+##The amount which the parents speed affects the sound interval
+@export var speed_time_influence : float = .1
+@export var speed_volume_influence : float = 1
+
+
+@onready var countdown : float = time_interval
+@onready var randomizer : AudioStreamRandomizer = AudioStreamRandomizer.new()
+
+@onready var current_material_group : String = "" 
+@onready var previous_material_group : String = "" #Stores the previous sound effect used
+@onready var starting_db : float = volume_db 
+
+func find_material(object_to_search : Object) -> String:
+	#Checks for common places object materials are stored
+	#Top two conditions checks for metadata in the actual object, which will always take priority as this is considered an override to the materials metadata.
+	if object_to_search == null:
+		return ""
+	if object_to_search.has_meta("Material_Group"):
+		current_material_group = object_to_search.get_meta("Material_Group")
+	elif object_to_search.get("material"):
+		if object_to_search.material.has_meta("Material_Group"):
+				current_material_group = object_to_search.material.get_meta("Material_Group")
+	elif object_to_search.get("material_override"):
+		if object_to_search.material_override.has_meta("Material_Group"):
+			current_material_group = object_to_search.material_override.get_meta("Material_Group")
+	else:
+		##Clears current material group, without this the fallback group will not play properly as it will still be set to whatever material group was set last.
+		current_material_group = ""
+			
+	# Checks parent nodes for metadata
+	if object_to_search is Node and current_material_group == "":
+		find_material(object_to_search.get_parent())
+	
+	#Fallback for confirmed solid objects that don't have any material metadata.
+	if current_material_group == "" and object_to_search != null: 
+		#print("Restorting to fallback material group")
+		current_material_group = sound_set.fallback_soundgroup
+	#print(current_material_group)
+	return current_material_group
+
+func load_sound_array(desired_group : String) -> void:
+
+	for loop_index in (randomizer.streams_count):
+
+		randomizer.remove_stream(0) #Clears all the streams, actually incrementing with the index doesn't work as it re-sorts on removal.
+			
+	if sound_set.material_dictionary.has(desired_group):
+		for current_object : AudioStream in sound_set.material_dictionary[desired_group]:
+			#print(current_object)
+			randomizer.add_stream(0, current_object, 1.0)
+	else:
+		push_warning("No soundset for materialgroup " + desired_group + " doing fallback sound.")
+		for current_object : AudioStream in sound_set.material_dictionary[sound_set.fallback_soundgroup]:
+			#print(current_object)
+			randomizer.add_stream(0, current_object, 1.0)
+	
+		
+	previous_material_group = desired_group
+
+#Returns a list of true or false values checking if each position is in a water volume
+func check_underwater_points(...points: Array) -> Array:
+	
+	var space_state : PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+
+	var underwater_points := []
+	var loop_index : int = 0
+	
+	for current_point : Vector3 in points:
+		#print(current_point)
+		
+		var water_query : PhysicsPointQueryParameters3D = PhysicsPointQueryParameters3D.new()
+		water_query.collide_with_areas = true
+		water_query.collide_with_bodies = false
+		water_query.position = points[loop_index]
+		
+		var water_results : Array[Dictionary]
+		water_results = space_state.intersect_point(water_query)
+		
+		#print(water_results)
+		underwater_points.append(false)
+		for current_result in water_results:
+			if current_result["collider"]:
+				if current_result["collider"].is_in_group("Water_Volume") or current_result["collider"].get_parent().is_in_group("Water_Volume"):
+					underwater_points[loop_index] = true
+
+		
+		loop_index += 1
+	return underwater_points
+
+# Called when the node enters the scene tree for the first time.
+func sound_effect() -> void:
+	
+	var space_state : PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	
+	
+	var query : PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(self.global_position, (self.global_position  + Vector3(0, -raycast_length, 0)))
+	var result : Dictionary = space_state.intersect_ray(query)
+
+	#Doesn't check direct player center but instead shifted down relative to movement sound node, to approximate "hip height"
+	var downshift_point : Vector3 = (global_position.lerp(get_parent().global_position, 0.65))
+	#print(downshift_point)
+	## 0 - Movement Sound Node, 1 - Center of body (Shifted down sightly)
+	var underwater_points : Array = check_underwater_points((global_position), (downshift_point))
+
+	if underwater_points[1] and get_parent().is_in_group("Submerged"): #For custom swimming sound logic
+		current_material_group = ("Deep Water")
+	elif underwater_points[1]:
+		current_material_group = ("Deep Water")
+	elif underwater_points[0]:
+		current_material_group = ("Shallow Water")
+	elif result:
+		##For either collision nodes being detected or csg nodes
+		if result.collider is GeometryInstance3D or result.collider is CollisionObject3D:
+			current_material_group = find_material(result.collider)
+		elif result.collider is GridMap:
+			var current_gridmap : GridMap = result.collider
+			var map_target : Vector3 = current_gridmap.local_to_map(current_gridmap.to_local(result.position))
+			var desired_item : int = current_gridmap.get_cell_item(map_target)
+			#print(desired_item)
+			#print(current_gridmap.mesh_library.get_item_mesh(desired_item))
+			#Gets the corresponding mesh for the current tile
+			var desired_mesh : Mesh = current_gridmap.mesh_library.get_item_mesh(desired_item)
+			#print(desired_mesh.material)
+			current_material_group = find_material(desired_mesh)
+
+	#Does a check to avoid reloading the sound list if the material hasn't changed
+	if current_material_group != previous_material_group:
+		#print("New material")
+		if current_material_group == null:
+			load_sound_array(sound_set.fallback_soundgroup)
+		else:
+			load_sound_array(current_material_group)
+		
+	if result or underwater_points[1]:
+		#print("Playing footstep")
+		play()
+	else:
+		countdown = 0
+		
+		#print(result)
+		#print("No result")
+		#if timed_sounds:
+			#countdown = 0
+			
+	#print(current_material_group)
+
+
+func _ready() -> void:
+	
+	stream = randomizer
+	
+	if not self.get_parent() is PhysicsBody3D:
+		push_warning("Object " + str(self.get_parent) + " does not have a parent that inherits from PhysicsBody3D, meaning it has no velocity to base off of.")
+	
+	play_sound.connect(sound_effect)
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta_time: float) -> void:
+	
+	countdown -= delta_time
+	#print("Velocity: " + str(self.get_parent().velocity.length()))
+	volume_db = ((starting_db + (self.get_parent().desired_velocity.length())) * (3.25 * speed_volume_influence))
+	#print("Volume: " + str(volume_db))
+	
+	#print("Current set:")
+	#for loop_index in (randomizer.streams_count):
+		#
+		#print(randomizer.get_stream(loop_index))
+	if timed_sounds:
+		
+		if (countdown <= 0) and (self.get_parent().desired_velocity.length() > 0.5):
+			#print(self.get_parent().velocity.length())
+		
+			countdown = (time_interval / (self.get_parent().desired_velocity.length() * speed_time_influence))
+			
+			play_sound.emit()
+		
+	
+
+	
+	
+	
+	#var result = space_state.intersect_ray(query)
+	#print(result)
+	

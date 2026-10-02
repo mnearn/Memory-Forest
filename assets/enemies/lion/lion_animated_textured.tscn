@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/enemies/lion/lion_animated.glb" id="1"]
+[ext_resource type="Material" path="res://assets/enemies/lion/lion_fur.tres" id="2"]
+
+[node name="AnimatedLion" instance=ExtResource("1")]
+
+[node name="Object_8" parent="Sketchfab_model/a9dbf7a8ee1f439da299ee276542a954_fbx/Object_2/RootNode/Lion_SHJntGrp/Object_6/Skeleton3D"]
+material_override = ExtResource("2")
+
+[node name="Object_86" parent="Sketchfab_model/a9dbf7a8ee1f439da299ee276542a954_fbx/Object_2/RootNode/Lion_SHJntGrp/Object_6/Skeleton3D"]
+material_override = ExtResource("2")
+
+[node name="Object_87" parent="Sketchfab_model/a9dbf7a8ee1f439da299ee276542a954_fbx/Object_2/RootNode/Lion_SHJntGrp/Object_6/Skeleton3D"]
+material_override = ExtResource("2")

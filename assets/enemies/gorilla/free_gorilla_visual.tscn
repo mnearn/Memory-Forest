@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/enemies/gorilla/free_gorilla.glb" id="1"]
+
+[node name="GorillaVisual" type="Node3D"]
+
+; The enemy animates this wrapper at scale 3 and y=1.
+; Normalize the source's 619.17-unit height to 3.2 gameplay units.
+[node name="FreeGorilla" parent="." instance=ExtResource("1")]
+position = Vector3(0, -0.132098, -0.140228)
+scale = Vector3(0.00172289, 0.00172289, 0.00172289)

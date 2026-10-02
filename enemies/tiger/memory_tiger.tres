@@ -1,0 +1,15 @@
+[gd_resource type="ShaderMaterial" load_steps=5 format=3]
+
+[ext_resource type="Shader" path="res://enemies/tiger/memory_tiger.gdshader" id="1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/tiger/white_tiger_rigged_animated_0.jpg" id="2"]
+[ext_resource type="Texture2D" path="res://assets/enemies/tiger/white_tiger_rigged_animated_2.jpg" id="3"]
+[ext_resource type="Texture2D" path="res://assets/enemies/tiger/white_tiger_rigged_animated_1.png" id="4"]
+
+[resource]
+resource_name = "Memory-corrupted Tiger"
+shader = ExtResource("1")
+shader_parameter/fur_texture = ExtResource("2")
+shader_parameter/normal_texture = ExtResource("3")
+shader_parameter/roughness_texture = ExtResource("4")
+shader_parameter/memory_energy = 0.35
+shader_parameter/hit_flash = 0.0

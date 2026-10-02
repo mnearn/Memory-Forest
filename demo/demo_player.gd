@@ -1,5 +1,11 @@
 extends CharacterBody3D
 
+const PlayerVisualScene = preload("res://assets/player/blake/blake_player.tscn")
+const WorldEventSFX = preload("res://audio/world_event_sfx.gd")
+const SWORD_SWING = preload("res://audio/weapons/sword/sword_swing.mp3")
+var sword_sfx: AudioStreamPlayer3D
+var player_visual: Node3D
+
 signal died
 signal health_changed(current_health: float, max_health: float)
 
@@ -21,6 +27,7 @@ var is_dead := false
 func _ready() -> void:
 	_apply_inherited_stats()
 	_build_player_model()
+	sword_sfx = WorldEventSFX.attach(self, SWORD_SWING, "SwordSwingSFX", -12.0)
 
 	health = max_health
 	health_changed.emit(health, max_health)
@@ -74,6 +81,11 @@ func _physics_process(_delta: float) -> void:
 		velocity.y = 0.0
 
 	move_and_slide()
+	player_visual.update_movement(velocity, _delta)
+
+	if global_position.y < -4.0:
+		_die()
+		return
 
 	if Input.is_key_pressed(KEY_SPACE) and can_attack:
 		_attack()
@@ -81,6 +93,13 @@ func _physics_process(_delta: float) -> void:
 
 func _attack() -> void:
 	can_attack = false
+	# Start the unchanged cooldown now; contact occurs during the visible swing.
+	var cooldown_timer := get_tree().create_timer(attack_cooldown)
+	_show_attack_swing()
+	sword_sfx.play_event()
+	await get_tree().create_timer(player_visual.get_attack_contact_delay(attack_cooldown)).timeout
+	if is_dead:
+		return
 
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(enemy):
@@ -91,7 +110,7 @@ func _attack() -> void:
 		if distance <= 2.5:
 			enemy.take_damage(damage)
 
-	await get_tree().create_timer(attack_cooldown).timeout
+	await cooldown_timer.timeout
 
 	if not is_dead:
 		can_attack = true
@@ -116,6 +135,7 @@ func _die() -> void:
 
 	is_dead = true
 	velocity = Vector3.ZERO
+	player_visual.die()
 	died.emit()
 
 
@@ -131,32 +151,9 @@ func _build_player_model() -> void:
 
 	add_child(collision)
 
-	var body := MeshInstance3D.new()
-	var mesh := CapsuleMesh.new()
+	player_visual = PlayerVisualScene.instantiate()
+	add_child(player_visual)
 
-	mesh.radius = 0.45
-	mesh.height = 1.8
 
-	body.mesh = mesh
-	body.position.y = 0.9
-
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.72, 0.46, 0.20)
-
-	body.material_override = material
-
-	add_child(body)
-
-	var marker := MeshInstance3D.new()
-	var marker_mesh := BoxMesh.new()
-
-	marker_mesh.size = Vector3(0.7, 0.25, 0.5)
-	marker.mesh = marker_mesh
-	marker.position = Vector3(0, 1.35, -0.38)
-
-	var marker_material := StandardMaterial3D.new()
-	marker_material.albedo_color = Color(0.9, 0.22, 0.08)
-
-	marker.material_override = marker_material
-
-	add_child(marker)
+func _show_attack_swing() -> void:
+	player_visual.attack(attack_cooldown)

@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://assets/player/blake/blake_player_visual.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/player/blake/blake.glb" id="2"]
+
+[node name="BlakePlayerVisual" type="Node3D"]
+script = ExtResource("1")
+
+[node name="Blake" parent="." instance=ExtResource("2")]
+position = Vector3(0, 0.02, 0)
+rotation = Vector3(0, 3.14159265, 0)

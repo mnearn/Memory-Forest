@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://assets/environment/jungle_preview/jungle_arena_visual.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/environment/jungle_preview/jungle_environment.glb" id="2"]
+
+[node name="ImportedJungle" type="Node3D"]
+script = ExtResource("1")
+
+[node name="JungleAsset" parent="." instance=ExtResource("2")]
+position = Vector3(20.380598, -8.500843, -5.115948)
+scale = Vector3(0.024, 0.024, 0.024)
